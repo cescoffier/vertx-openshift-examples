@@ -9,5 +9,8 @@ public class SenderVerticle extends AbstractVerticle {
     vertx.setPeriodic(1000, l -> {
       vertx.eventBus().publish("data", "Hello " + System.currentTimeMillis());
     });
+
+    vertx.createHttpServer().requestHandler(request -> request.response().end("sending data on the event bus"))
+        .listen(8080);
   }
 }
