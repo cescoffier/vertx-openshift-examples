@@ -2,11 +2,20 @@ package io.vertx.sample;
 
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServiceList;
+import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.ConfigBuilder;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.client.DefaultOpenShiftClient;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 public class SenderVerticle extends AbstractVerticle {
 
@@ -36,7 +45,10 @@ public class SenderVerticle extends AbstractVerticle {
 
   private String dump() {
     String dump = "\n";
-    OpenShiftClient client = new DefaultOpenShiftClient();
+    String accountToken = getAccountToken();
+    System.out.println("Kubernetes Discovery: Bearer Token { " + accountToken + " }");
+    Config config = new ConfigBuilder().withOauthToken(accountToken).build();
+    KubernetesClient client = new DefaultKubernetesClient(config);
     ServiceList list = client.services().inNamespace("vertx-demo-cluster").list();
     for (Service svc : list.getItems()) {
       dump += svc.getMetadata().getNamespace() + " / " + svc.getMetadata().getName() + " (" + svc.getMetadata()
@@ -44,5 +56,19 @@ public class SenderVerticle extends AbstractVerticle {
     }
     return dump;
 
+  }
+
+  private String getAccountToken() {
+    try {
+      String tokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token";
+      File file = new File(tokenFile);
+      byte[] data = new byte[(int) file.length()];
+      InputStream is = new FileInputStream(file);
+      is.read(data);
+      return new String(data);
+
+    } catch (IOException e) {
+      throw new RuntimeException("Could not get token file", e);
+    }
   }
 }
