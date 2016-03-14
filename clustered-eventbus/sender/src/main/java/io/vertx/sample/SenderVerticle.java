@@ -45,30 +45,14 @@ public class SenderVerticle extends AbstractVerticle {
 
   private String dump() {
     String dump = "\n";
-    String accountToken = getAccountToken();
-    System.out.println("Kubernetes Discovery: Bearer Token { " + accountToken + " }");
-    Config config = new ConfigBuilder().withOauthToken(accountToken).build();
-    KubernetesClient client = new DefaultKubernetesClient(config);
+    System.setProperty("kubernetes.auth.basic.username", "admin");
+    System.setProperty("kubernetes.auth.basic.password", "admin");
+    KubernetesClient client = new DefaultKubernetesClient();
     ServiceList list = client.services().inNamespace("vertx-demo-cluster").list();
     for (Service svc : list.getItems()) {
       dump += svc.getMetadata().getNamespace() + " / " + svc.getMetadata().getName() + " (" + svc.getMetadata()
           .getGenerateName() + ") \n";
     }
     return dump;
-
-  }
-
-  private String getAccountToken() {
-    try {
-      String tokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token";
-      File file = new File(tokenFile);
-      byte[] data = new byte[(int) file.length()];
-      InputStream is = new FileInputStream(file);
-      is.read(data);
-      return new String(data);
-
-    } catch (IOException e) {
-      throw new RuntimeException("Could not get token file", e);
-    }
   }
 }
