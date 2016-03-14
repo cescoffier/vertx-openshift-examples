@@ -12,6 +12,7 @@
   <packaging>pom</packaging>
 
   <modules>
+    <module>eventbus-service</module>
     <module>sender</module>
     <module>receiver</module>
   </modules>

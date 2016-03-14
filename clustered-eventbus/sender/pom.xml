@@ -2,15 +2,46 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>io.vertx.sample</groupId>
   <version>3.2.1</version>
-  <artifactId>vertx-openshift-receiver</artifactId>
+  <artifactId>vertx-openshift-sender</artifactId>
 
   <properties>
     <vertx.version>3.2.1</vertx.version>
-    <main.verticle>io.vertx.sample.ReceiverVerticle</main.verticle>
+    <main.verticle>io.vertx.sample.SenderVerticle</main.verticle>
+
+    <fabric8.version>2.2.96</fabric8.version>
+    <docker.maven.plugin.version>0.14.1</docker.maven.plugin.version>
+
+    <!-- Docker & Fabric8 Configs -->
+    <docker.from>fabric8/java-jboss-openjdk8-jdk:1.0.10</docker.from>
+    <fabric8.dockerUser>fabric8/</fabric8.dockerUser>
+    <docker.image>${fabric8.dockerUser}${project.artifactId}:${project.version}</docker.image>
+
+    <fabric8.label.component>${project.artifactId}</fabric8.label.component>
+    <fabric8.label.container>java</fabric8.label.container>
+    <fabric8.label.group>quickstarts</fabric8.label.group>
+    <fabric8.iconRef>vertx</fabric8.iconRef>
+
+    <!--
+   We create two services
+   1. A loadbalancing service for the web traffic to the application
+   2. A headless service so different containers can discover each other as Hazelcast nodes
+   This is pretty typical for Vert.x microservices which often act as both webserver and hazelcast node
+   -->
+    <fabric8.service.name>${project.artifactId}</fabric8.service.name>
+    <fabric8.service.port>80</fabric8.service.port>
+    <fabric8.service.containerPort>8080</fabric8.service.containerPort>
+    <fabric8.service.type>LoadBalancer</fabric8.service.type>
+
+    <fabric8.service.vertx-eventbus.headless>true</fabric8.service.vertx-eventbus.headless>
+    <fabric8.service.vertx-eventbus.port>5701</fabric8.service.vertx-eventbus.port>
+    <fabric8.service.vertx-eventbus.containerPort>5701</fabric8.service.vertx-eventbus.containerPort>
+
+
   </properties>
 
   <dependencyManagement>
@@ -19,6 +50,13 @@
         <groupId>io.vertx</groupId>
         <artifactId>vertx-dependencies</artifactId>
         <version>${vertx.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.fabric8</groupId>
+        <artifactId>fabric8-project-bom-with-platform-deps</artifactId>
+        <version>${fabric8.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -78,8 +116,7 @@
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   <manifestEntries>
-                    <Main-Class>io.vertx.core.Launcher</Main-Class>
-                    <Main-Verticle>${main.verticle}</Main-Verticle>
+                    <Main-Class>io.vertx.sample.SenderVerticle</Main-Class>
                   </manifestEntries>
                 </transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
@@ -88,11 +125,90 @@
               </transformers>
               <artifactSet>
               </artifactSet>
-              <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</outputFile>
             </configuration>
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>fabric8-maven-plugin</artifactId>
+        <version>${fabric8.version}</version>
+        <executions>
+          <execution>
+            <id>json</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>json</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>attach</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <version>${docker.maven.plugin.version}</version>
+        <configuration>
+          <images>
+            <image>
+              <name>${docker.image}</name>
+              <build>
+                <from>${docker.from}</from>
+                <assembly>
+                  <basedir>/app</basedir>
+                  <descriptorRef>artifact</descriptorRef>
+                </assembly>
+                <env>
+                  <JAVA_APP_JAR>${project.build.finalName}.jar</JAVA_APP_JAR>
+                </env>
+              </build>
+            </image>
+          </images>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
+
+  <!--
+Default sample commands:
+mvn -Pf8-build         ... build Docker images and create OpenShift deployment configs
+mvn -Pf8-deploy        ... f8-build + push to Docker registry + applying deployment config to OpenShift
+mvn -Pf8-local-deploy ... deployment for a single node setup without pushing to a registry
+For individual goal usage please consult the fabric8 documentation
+-->
+  <profiles>
+    <profile>
+      <id>f8-build</id>
+      <build>
+        <defaultGoal>clean install docker:build fabric8:json</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <id>f8-deploy</id>
+      <properties>
+        <fabric8.imagePullPolicySnapshot>Always</fabric8.imagePullPolicySnapshot>
+        <fabric8.recreate>true</fabric8.recreate>
+      </properties>
+      <build>
+        <defaultGoal>clean install docker:build docker:push fabric8:json fabric8:apply</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <id>f8-local-deploy</id>
+      <properties>
+        <fabric8.recreate>true</fabric8.recreate>
+      </properties>
+      <build>
+        <defaultGoal>clean install docker:build fabric8:json fabric8:apply</defaultGoal>
+      </build>
+    </profile>
+  </profiles>
 </project>
