@@ -41,6 +41,8 @@ public class SenderVerticle extends AbstractVerticle {
 
     vertx.createHttpServer().requestHandler(request -> request.response().end(podName + " is sending data on the " +
         "event bus " + dump())).listen(8080);
+
+    dump();
   }
 
   private String dump() {
@@ -54,6 +56,9 @@ public class SenderVerticle extends AbstractVerticle {
       dump += svc.getMetadata().getNamespace() + " / " + svc.getMetadata().getName() + " (" + svc.getMetadata()
           .getGenerateName() + ") \n";
     }
+
+    System.out.println(dump);
+
     return dump;
   }
 }
