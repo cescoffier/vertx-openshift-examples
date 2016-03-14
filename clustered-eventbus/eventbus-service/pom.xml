@@ -7,7 +7,7 @@
 
   <groupId>io.vertx.sample</groupId>
   <version>3.2.1</version>
-  <artifactId>vertx-openshift-sender</artifactId>
+  <artifactId>vertx-openshift-eventbus</artifactId>
 
   <properties>
     <vertx.version>3.2.1</vertx.version>
