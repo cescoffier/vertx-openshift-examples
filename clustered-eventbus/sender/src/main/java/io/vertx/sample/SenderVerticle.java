@@ -55,6 +55,9 @@ public class SenderVerticle extends AbstractVerticle {
     for (Service svc : list.getItems()) {
       dump += svc.getMetadata().getNamespace() + " / " + svc.getMetadata().getName() + " (" + svc.getMetadata()
           .getGenerateName() + ") \n";
+      dump += "\t" + svc.getAdditionalProperties() + "\n";
+      dump += "\t" + svc.getStatus() + "\n";
+      dump += "\t" + svc.getSpec() + "\n";
     }
     return dump;
 
