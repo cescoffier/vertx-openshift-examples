@@ -45,6 +45,7 @@ public class SenderVerticle extends AbstractVerticle {
 
   private String dump() {
     String dump = "\n";
+    System.setProperty("kubernetes.auth.tryKubeConfig", "true");
     System.setProperty("kubernetes.auth.basic.username", "admin");
     System.setProperty("kubernetes.auth.basic.password", "admin");
     KubernetesClient client = new DefaultKubernetesClient();
