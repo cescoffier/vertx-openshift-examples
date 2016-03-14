@@ -1,5 +1,9 @@
 package io.vertx.sample;
 
+import io.fabric8.kubernetes.api.model.Service;
+import io.fabric8.kubernetes.api.model.ServiceList;
+import io.fabric8.openshift.client.DefaultOpenShiftClient;
+import io.fabric8.openshift.client.OpenShiftClient;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
@@ -27,6 +31,18 @@ public class SenderVerticle extends AbstractVerticle {
     });
 
     vertx.createHttpServer().requestHandler(request -> request.response().end(podName + " is sending data on the " +
-        "event bus")).listen(8080);
+        "event bus " + dump())).listen(8080);
+  }
+
+  private String dump() {
+    String dump = "\n";
+    OpenShiftClient client = new DefaultOpenShiftClient();
+    ServiceList list = client.services().inNamespace("vertx-demo-cluster").list();
+    for (Service svc : list.getItems()) {
+      dump += svc.getMetadata().getNamespace() + " / " + svc.getMetadata().getName() + " (" + svc.getMetadata()
+          .getGenerateName() + ") \n";
+    }
+    return dump;
+
   }
 }
