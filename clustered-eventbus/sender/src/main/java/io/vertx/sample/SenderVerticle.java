@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Map;
 
 public class SenderVerticle extends AbstractVerticle {
 
@@ -58,6 +59,10 @@ public class SenderVerticle extends AbstractVerticle {
       dump += "\t" + svc.getAdditionalProperties() + "\n";
       dump += "\t" + svc.getStatus() + "\n";
       dump += "\t" + svc.getSpec() + "\n";
+    }
+    dump += "------ \n";
+    for (Map.Entry<String, String> env : System.getenv().entrySet()) {
+      dump += "\t" + env.getKey() + " = " + env.getValue() + "\n";
     }
     return dump;
 
