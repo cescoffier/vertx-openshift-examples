@@ -11,6 +11,7 @@ import io.fabric8.openshift.client.OpenShiftClient;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
+import io.vertx.core.dns.DnsClient;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -55,7 +56,7 @@ public class SenderVerticle extends AbstractVerticle {
     ServiceList list = client.services().inNamespace("vertx-demo-cluster").list();
     for (Service svc : list.getItems()) {
       dump += svc.getMetadata().getNamespace() + " / " + svc.getMetadata().getName() + " (" + svc.getMetadata()
-          .getGenerateName() + ") \n";
+          .getLabels() + ") \n";
       dump += "\t" + svc.getAdditionalProperties() + "\n";
       dump += "\t" + svc.getStatus() + "\n";
       dump += "\t" + svc.getSpec() + "\n";
@@ -64,6 +65,9 @@ public class SenderVerticle extends AbstractVerticle {
     for (Map.Entry<String, String> env : System.getenv().entrySet()) {
       dump += "\t" + env.getKey() + " = " + env.getValue() + "\n";
     }
+
+    dump += "------ \n";
+
     return dump;
 
   }
